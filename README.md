@@ -40,7 +40,7 @@ git clone https://github.com/mbrossar/ai-imu-dr.git
 ```
 wget "https://cloud.mines-paristech.fr/index.php/s/G9frEswwgKHhnr7/download"
 mkdir ai-imu-dr/results
-unzip download -d ai-imu-dr
+unzip download -d ai-imu-dr/results
 rm download
 ```
 These file can alternatively be generated after download the KITTI raw data and setting `read_data = 1` in the `main.py` file.
@@ -53,7 +53,6 @@ rm download
 ```
 4. Test the filters !
 ```
-ai-imu-dr/results
 cd ai-imu-dr/src
 python3 main_kitti.py
 ```
