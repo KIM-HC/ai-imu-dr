@@ -412,6 +412,8 @@ class NUMPYIEKF:
         return roll, pitch, yaw
 
     def set_learned_covariance(self, torch_iekf):
+        ### detach(): detaches from current graph (no gradient)
+        ### set learned Q than brings it to cpu
         torch_iekf.set_Q()
         self.Q = torch_iekf.Q.cpu().detach().numpy()
 

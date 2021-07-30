@@ -69,7 +69,7 @@ def train_filter(args, dataset):
         print("Amount of time spent for 1 epoch: {}s\n".format(int(time.time() - start_time)))
         start_time = time.time()
 
-
+### prepares TORCHIEKF model for training.
 def prepare_filter(args, dataset):
     iekf = TORCHIEKF()
 
@@ -82,6 +82,7 @@ def prepare_filter(args, dataset):
     # load model
     if args.continue_training:
         iekf.load(args, dataset)
+    ### .train() makes training environment (dropout ...)
     iekf.train()
     # init u_loc and u_std
     iekf.get_normalize_u(dataset)
@@ -146,6 +147,7 @@ def prepare_loss_data(args, dataset):
     dataset.dump(mondict, file_delta_p)
 
 
+### where main training happens
 def train_loop(args, dataset, epoch, iekf, optimizer, seq_dim):
     loss_train = 0
     optimizer.zero_grad()
@@ -201,7 +203,9 @@ def mini_batch_step(dataset, dataset_name, iekf, list_rpe, t, ang_gt, p_gt, v_gt
     return loss
 
 
+### makes optimizer for all learning model
 def set_optimizer(iekf):
+    ### getattr(obj, name): returns name in obj (obj.name)
     param_list = [{'params': iekf.initprocesscov_net.parameters(),
                            'lr': lr_initprocesscov_net,
                            'weight_decay': weight_decay_initprocesscov_net}]
