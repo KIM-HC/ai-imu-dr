@@ -1,5 +1,6 @@
 import os
 import time
+from numpy.lib import ufunclike
 import torch
 import matplotlib.pyplot as plt
 import numpy as np
@@ -21,19 +22,22 @@ weight_decay_mesnet = {'cov_net': 1e-8,
     'cov_lin': 1e-8,
     }
 
-
+### computes delta_p of ground truth
 def compute_delta_p(Rot, p):
     list_rpe = [[], [], []]  # [idx_0, idx_end, pose_delta_p]
 
     # sample at 1 Hz
+    ### get info every 10 ticks
     Rot = Rot[::10]
     p = p[::10]
 
     step_size = 10  # every second
     distances = np.zeros(p.shape[0])
+    ### how can this be ground truth??? -> input is ground truth...
     dp = p[1:] - p[:-1]  #  this must be ground truth
     distances[1:] = dp.norm(dim=1).cumsum(0).numpy()
 
+    ### possible sub-sequence lengths from 100m to 800m
     seq_lengths = [100, 200, 300, 400, 500, 600, 700, 800]
     k_max = int(Rot.shape[0] / step_size) - 1
 
@@ -50,6 +54,7 @@ def compute_delta_p(Rot, p):
 
         idxs_0 = list_rpe[0]
         idxs_end = list_rpe[1]
+        ### shows delta_p in idxs_0 frame
         delta_p = Rot[idxs_0].transpose(-1, -2).matmul(
             ((p[idxs_end] - p[idxs_0]).float()).unsqueeze(-1)).squeeze()
         list_rpe[2] = delta_p
@@ -57,14 +62,14 @@ def compute_delta_p(Rot, p):
 
 
 def train_filter(args, dataset):
-    iekf = prepare_filter(args, dataset)
+    iekf = prepare_filter(args, dataset)  # TORCHIEKF
     prepare_loss_data(args, dataset)
     save_iekf(args, iekf)
     optimizer = set_optimizer(iekf)
     start_time = time.time()
 
     for epoch in range(1, args.epochs + 1):
-        train_loop(args, dataset, epoch, iekf, optimizer, args.seq_dim)
+        train_loop(args, dataset, epoch, iekf, optimizer, args.seq_dim)  # TORCHIEKF
         save_iekf(args, iekf)
         print("Amount of time spent for 1 epoch: {}s\n".format(int(time.time() - start_time)))
         start_time = time.time()
@@ -88,11 +93,8 @@ def prepare_filter(args, dataset):
     iekf.get_normalize_u(dataset)
     return iekf
 
-
+### prepare delta_p information of ground truth
 def prepare_loss_data(args, dataset):
-
-
-
     file_delta_p = os.path.join(args.path_temp, 'delta_p.p')
     if os.path.isfile(file_delta_p):
         mondict = dataset.load(file_delta_p)
@@ -155,7 +157,7 @@ def train_loop(args, dataset, epoch, iekf, optimizer, seq_dim):
         t, ang_gt, p_gt, v_gt, u, N0 = prepare_data_filter(dataset, dataset_name, Ns,
                                                                   iekf, seq_dim)
 
-        loss = mini_batch_step(dataset, dataset_name, iekf,
+        loss = mini_batch_step(dataset, dataset_name, iekf,  # TORCHIEKF
                                dataset.list_rpe[dataset_name], t, ang_gt, p_gt, v_gt, u, N0)
 
         if loss is -1 or torch.isnan(loss):
@@ -190,13 +192,19 @@ def save_iekf(args, iekf):
     print("The IEKF nets are saved in the file " + file_name)
 
 
+### 1 batch = 1 minute sequence (seq_sim = 6000ms)
 def mini_batch_step(dataset, dataset_name, iekf, list_rpe, t, ang_gt, p_gt, v_gt, u, N0):
     iekf.set_Q()
-    measurements_covs = iekf.forward_nets(u)
+    ### for updating covariance with learning model
+    measurements_covs = iekf.forward_nets(u)  # TORCHIEKF
+    print(f"testing measurements_covs.size(): {measurements_covs.size()}")
+    print(f"testing u.size(): {u.size()}")
     Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i = iekf.run(t, u,measurements_covs,
                                                             v_gt, p_gt, t.shape[0],
                                                             ang_gt[0])
     delta_p, delta_p_gt = precompute_lost(Rot, p, list_rpe, N0)
+    print(f"testing type(delta_p): {type(delta_p)}")
+    print(f"testing type(delta_p_gt): {type(delta_p_gt)}")
     if delta_p is None:
         return -1
     loss = criterion(delta_p, delta_p_gt)
@@ -220,11 +228,13 @@ def set_optimizer(iekf):
 
 def prepare_data_filter(dataset, dataset_name, Ns, iekf, seq_dim):
     # get data with trainable instant
+    ### t:time  u:input
     t, ang_gt, p_gt, v_gt,  u = dataset.get_data(dataset_name)
     t = t[Ns[0]: Ns[1]]
     ang_gt = ang_gt[Ns[0]: Ns[1]]
     p_gt = p_gt[Ns[0]: Ns[1]] - p_gt[Ns[0]]
     v_gt = v_gt[Ns[0]: Ns[1]]
+    ### data_start~data_end
     u = u[Ns[0]: Ns[1]]
 
     # subsample data
@@ -233,6 +243,7 @@ def prepare_data_filter(dataset, dataset_name, Ns, iekf, seq_dim):
     ang_gt = ang_gt[N0: N].double()
     p_gt = (p_gt[N0: N] - p_gt[N0]).double()
     v_gt = v_gt[N0: N].double()
+    ### subsample_start~subsample_end
     u = u[N0: N].double()
 
     # add noise
@@ -252,6 +263,8 @@ def get_start_and_end(seq_dim, u):
     return N0, N
 
 
+### khc check
+### computes loss
 def precompute_lost(Rot, p, list_rpe, N0):
     N = p.shape[0]
     Rot_10_Hz = Rot[::10]
@@ -259,6 +272,7 @@ def precompute_lost(Rot, p, list_rpe, N0):
     idxs_0 = torch.Tensor(list_rpe[0]).clone().long() - int(N0 / 10)
     idxs_end = torch.Tensor(list_rpe[1]).clone().long() - int(N0 / 10)
     delta_p_gt = list_rpe[2]
+    ### make all index not in range to zero
     idxs = torch.Tensor(idxs_0.shape[0]).byte()
     idxs[:] = 1
     idxs[idxs_0 < 0] = 0
@@ -269,6 +283,7 @@ def precompute_lost(Rot, p, list_rpe, N0):
     if len(idxs_0_bis) is 0: 
         return None, None     
     else:
+        ### not sure about delta_p type
         delta_p = Rot_10_Hz[idxs_0_bis].transpose(-1, -2).matmul(
         (p_10_Hz[idxs_end_bis] - p_10_Hz[idxs_0_bis]).unsqueeze(-1)).squeeze()
         distance = delta_p_gt.norm(dim=1).unsqueeze(-1)

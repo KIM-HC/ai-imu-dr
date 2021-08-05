@@ -38,6 +38,7 @@ class InitProcessCovNet(torch.nn.Module):
             return beta
 
 
+### network for measurement noise covariance
 class MesNet(torch.nn.Module):
         def __init__(self):
             super(MesNet, self).__init__()
@@ -110,7 +111,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
                             ).double()
         self.cov0_measurement = torch.Tensor([self.cov_lat, self.cov_up]).double()
 
-    ### move
+    ### move, get measurements_covs(which we get values from learning model)
     def run(self, t, u,  measurements_covs, v_mes, p_mes, N, ang0):
 
         dt = t[1:] - t[:-1]  # (s)
@@ -161,6 +162,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
         Rot_c_i[0] = torch.eye(3).double()
         return Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i
 
+    ### same calculations, differences came from using torch framework instead of numpy framework
     def propagate(self, Rot_prev, v_prev, p_prev, b_omega_prev, b_acc_prev, Rot_c_i_prev, t_c_i_prev,
                   P_prev, u, dt):
         Rot_prev = Rot_prev.clone()
@@ -181,6 +183,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
                                u, dt)
         return Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i, P
 
+    ### same calculations, differences came from using torch framework instead of numpy framework
     def propagate_cov(self, P, Rot_prev, v_prev, p_prev, b_omega_prev, b_acc_prev, u,
                       dt):
 
@@ -425,12 +428,15 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
         S[2, 2] = torch.det(U) * torch.det(V)
         return U.mm(S).mm(V.t())
 
-    ### feedforward and get 
+    ### feedforward and get measurements_covs
     def forward_nets(self, u):
         ### t(): transpose
         ### unsqueeze(dim=0): extends dimension by (dim+1)
         u_n = self.normalize_u(u).t().unsqueeze(0)
+        ### get imu from 0 to 5???
+        ### why 6?? -> angular velocity and acceleration!!!
         u_n = u_n[:, :6]
+        print(f"testing u_n.size(): {u_n.size()}")
         measurements_covs = self.mes_net(u_n, self)
         return measurements_covs
 

@@ -117,14 +117,14 @@ class KITTIDataset(BaseDataset):
         super(KITTIDataset, self).__init__(args)
 
         self.datasets_validatation_filter['2011_09_30_drive_0028_extract'] = [11231, 53650]
-        self.datasets_train_filter["2011_10_03_drive_0042_extract"] = [0, 10000]
+        self.datasets_train_filter["2011_10_03_drive_0042_extract"] = [0, 12180]
         self.datasets_train_filter["2011_09_30_drive_0018_extract"] = [0, 15000]
-        self.datasets_train_filter["2011_09_30_drive_0020_extract"] = [0, 10000]
-        self.datasets_train_filter["2011_09_30_drive_0027_extract"] = [0, 10000]
-        self.datasets_train_filter["2011_09_30_drive_0033_extract"] = [0, 15000]
+        self.datasets_train_filter["2011_09_30_drive_0020_extract"] = [0, 11347]
+        self.datasets_train_filter["2011_09_30_drive_0027_extract"] = [0, 11545]
+        self.datasets_train_filter["2011_09_30_drive_0033_extract"] = [0, 16589]
         self.datasets_train_filter["2011_10_03_drive_0027_extract"] = [0, 18000]
         self.datasets_train_filter["2011_10_03_drive_0034_extract"] = [0, 31000]
-        self.datasets_train_filter["2011_09_30_drive_0034_extract"] = [0, 11000]
+        self.datasets_train_filter["2011_09_30_drive_0034_extract"] = [0, 12744]
 
         # self.datasets_train_filter["2011_10_03_drive_0042_extract"] = [0, None]
         # self.datasets_train_filter["2011_09_30_drive_0018_extract"] = [0, 15000]
@@ -462,12 +462,13 @@ def test_filter(args, dataset):
 
 
 class KITTIArgs():
-        path_data_base = "/media/mines/DATA/KITTI/raw"
+        path_data_base = "/home/kimhc/dataset/kitti"
         path_data_save = "../data"
         path_results = "../results"
         path_temp = "../temp"
 
         epochs = 400
+        ### time tick for each subsequence
         seq_dim = 6000
 
         # training, cross-validation and test dataset
@@ -476,8 +477,8 @@ class KITTIArgs():
         continue_training = True
 
         # choose what to do
-        read_data = 0
-        train_filter = 1
+        read_data = 1
+        train_filter = 0
         test_filter = 0
         results_filter = 0
         dataset_class = KITTIDataset
