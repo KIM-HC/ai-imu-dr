@@ -36,18 +36,18 @@ git clone https://github.com/mbrossar/ai-imu-dr.git
 ```
 
 ### Testing
-1. Download reformated pickle format of the 00-11 KITTI IMU raw data at this [url](https://cloud.mines-paristech.fr/index.php/s/G9frEswwgKHhnr7/download), extract and copy then in the `data` folder.
+1. Download reformated pickle format of the 00-11 KITTI IMU raw data at this [url](https://www.dropbox.com/s/ey41xsvfqca30vv/data.zip), extract and copy then in the `data` folder.
 ```
-wget "https://cloud.mines-paristech.fr/index.php/s/G9frEswwgKHhnr7/download"
+wget "https://www.dropbox.com/s/ey41xsvfqca30vv/data.zip"
 mkdir ai-imu-dr/data
 unzip download -d ai-imu-dr/data
 rm download
 ```
 These file can alternatively be generated after download the KITTI raw data and setting `read_data = 1` in the `main.py` file.
 
-2. Download training parameters at this [url](https://cloud.mines-paristech.fr/index.php/s/XXkh5VanzDW08hD/download), extract and copy in the `temp` folder.
+2. Download training parameters at this [url](https://www.dropbox.com/s/77kq4s7ziyvsrmi/temp.zip), extract and copy in the `temp` folder.
 ```
-wget "https://cloud.mines-paristech.fr/index.php/s/XXkh5VanzDW08hD/download"
+wget "https://www.dropbox.com/s/77kq4s7ziyvsrmi/temp.zip"
 unzip download -d ai-imu-dr/temp
 rm download
 ```
