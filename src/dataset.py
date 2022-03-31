@@ -73,7 +73,7 @@ class BaseDataset(Dataset):
     def dataset_name(self, i):
         return self.datasets[i]
 
-    ### get input
+    ## get input
     def get_data(self, i):
         pickle_dict = self[self.datasets.index(i) if type(i) != int else i]
         return pickle_dict['t'], pickle_dict['ang_gt'], pickle_dict['p_gt'], pickle_dict['v_gt'],\
@@ -86,11 +86,17 @@ class BaseDataset(Dataset):
             pickle_dict = self.load(path_normalize_factor)
             self.normalize_factors = pickle_dict['normalize_factors']
             self.num_data = pickle_dict['num_data']
+            cprint('normalize_factors.p loaded', 'green')
+            print('normalize_factors: {}'.format(pickle_dict['normalize_factors']))
+            print('num_data: {}'.format(pickle_dict['num_data']))
             return
 
+        cprint('normalize_factors.p file does not exist. making new normalize_factors info...', 'yellow')
+        ## TODO: does not work because when len(self.datasets_train) == 0 --> when there is no data in data/
+        print('len(self.datasets_train): {}'.format(len(self.datasets_train)))
         # first compute mean
         self.num_data = 0
-        print("test 1")
+
         for i, dataset in enumerate(self.datasets_train):
             pickle_dict = self.load(self.path_data_save, dataset)
             u = pickle_dict['u']

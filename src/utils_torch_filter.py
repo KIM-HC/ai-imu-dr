@@ -38,7 +38,7 @@ class InitProcessCovNet(torch.nn.Module):
             return beta
 
 
-### network for measurement noise covariance
+## network for measurement noise covariance
 class MesNet(torch.nn.Module):
         def __init__(self):
             super(MesNet, self).__init__()
@@ -94,7 +94,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
             self.filter_parameters = parameter_class()
             self.set_param_attr()
 
-    ### get parameter from self.filter_parameters = KITTIParameters
+    ## get parameter from self.filter_parameters = KITTIParameters
     def set_param_attr(self):
         # get a list of attribute only
         attr_list = [a for a in dir(self.filter_parameters) if not a.startswith('__')
@@ -111,7 +111,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
                             ).double()
         self.cov0_measurement = torch.Tensor([self.cov_lat, self.cov_up]).double()
 
-    ### move, get measurements_covs(which we get values from learning model)
+    ## move, get measurements_covs(which we get values from learning model)
     def run(self, t, u,  measurements_covs, v_mes, p_mes, N, ang0):
 
         dt = t[1:] - t[:-1]  # (s)
@@ -128,7 +128,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
                             u[i], i, measurements_covs[i])
         return Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i
 
-    ### init
+    ## init
     def init_run(self, dt, u, p_mes, v_mes, N, ang0):
             Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i = \
                 self.init_saved_state(dt, N, ang0)
@@ -137,7 +137,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
             P = self.init_covariance()
             return Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i, P
 
-    ### init KF covariance P with learning model init_cov
+    ## init KF covariance P with learning model init_cov
     def init_covariance(self):
         beta = self.initprocesscov_net.init_cov(self)
         P = torch.zeros(self.P_dim, self.P_dim).double()
@@ -150,7 +150,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
         return P
 
 
-    ### makes saved state to zero ...?
+    ## TODO:makes saved state to zero ...?
     def init_saved_state(self, dt, N, ang0):
         Rot = dt.new_zeros(N, 3, 3)
         v = dt.new_zeros(N, 3)
@@ -162,7 +162,8 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
         Rot_c_i[0] = torch.eye(3).double()
         return Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i
 
-    ### same calculations, differences came from using torch framework instead of numpy framework
+    ## same calculations from numpy_filter
+    ## differences came from using torch framework instead of numpy framework
     def propagate(self, Rot_prev, v_prev, p_prev, b_omega_prev, b_acc_prev, Rot_c_i_prev, t_c_i_prev,
                   P_prev, u, dt):
         Rot_prev = Rot_prev.clone()
@@ -183,7 +184,8 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
                                u, dt)
         return Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i, P
 
-    ### same calculations, differences came from using torch framework instead of numpy framework
+    ## same calculations from numpy_filter
+    ## differences came from using torch framework instead of numpy framework
     def propagate_cov(self, P, Rot_prev, v_prev, p_prev, b_omega_prev, b_acc_prev, u,
                       dt):
 
@@ -244,7 +246,9 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
     @staticmethod
     def state_and_cov_update(Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i, P, H, r, R):
         S = H.mm(P).mm(H.t()) + R
-        Kt, _ = torch.solve(P.mm(H.t()).t(), S)
+        Kt, _ = torch.gesv(P.mm(H.t()).t(), S)  ## gesv depricated (works for pytorch 1.1.0)
+        # Kt, _ = torch.solve(P.mm(H.t()).t(), S)  ## torch.solve depricated (works for pytorch 1.1.0)
+        # Kt, _ = torch.linalg.solve(S, P.mm(H.t()).t())  ## works for pytorch 1.11
         K = Kt.t()
         dx = K.mv(r.view(-1))
 
@@ -428,15 +432,14 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
         S[2, 2] = torch.det(U) * torch.det(V)
         return U.mm(S).mm(V.t())
 
-    ### feedforward and get measurements_covs
+    ## feedforward and get measurements_covs
     def forward_nets(self, u):
-        ### t(): transpose
-        ### unsqueeze(dim=0): extends dimension by (dim+1)
+        ## t(): transpose
+        ## unsqueeze(dim=0): extends dimension by (dim+1)
         u_n = self.normalize_u(u).t().unsqueeze(0)
-        ### get imu from 0 to 5???
-        ### why 6?? -> angular velocity and acceleration!!!
+        ## get imu from 0 to 5???
+        ## why 6?? -> angular velocity and acceleration!!!
         u_n = u_n[:, :6]
-        print(f"testing u_n.size(): {u_n.size()}")
         measurements_covs = self.mes_net(u_n, self)
         return measurements_covs
 
@@ -452,7 +455,7 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
         Update the process noise covariance
         :return:
         """
-        ### guessing this Q is the Q in equation(19) in the paper.
+        ## guessing this Q is the Q in equation(19) in the paper.
         self.Q = torch.diag(torch.Tensor([self.cov_omega, self.cov_omega, self. cov_omega,
                                            self.cov_acc, self.cov_acc, self.cov_acc,
                                            self.cov_b_omega, self.cov_b_omega, self.cov_b_omega,
@@ -461,8 +464,8 @@ class TORCHIEKF(torch.nn.Module, NUMPYIEKF):
                                            self.cov_t_c_i, self.cov_t_c_i, self.cov_t_c_i])
                             ).double()
 
-        ### But, this paper said it learns Q, which is below part.
-        ### Upper part is not used.
+        ## but, this paper said it learns Q, which is below part.
+        ## upper part is not used.
         beta = self.initprocesscov_net.init_processcov(self)
         self.Q = torch.zeros(self.Q.shape[0], self.Q.shape[0]).double()
         self.Q[:3, :3] = self.cov_omega*beta[0]*self.Id3

@@ -118,7 +118,7 @@ class NUMPYIEKF:
     def run(self, t, u, measurements_covs, v_mes, p_mes, N, ang0):
         dt = t[1:] - t[:-1]  # (s)
         if N is None:
-            ### run until the end
+            ## run until the end
             N = u.shape[0]
         Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i, P = self.init_run(dt, u, p_mes, v_mes,
                                        ang0, N)
@@ -413,8 +413,6 @@ class NUMPYIEKF:
         return roll, pitch, yaw
 
     def set_learned_covariance(self, torch_iekf):
-        ### detach(): detaches from current graph (no gradient)
-        ### set learned Q than brings it to cpu
         torch_iekf.set_Q()
         self.Q = torch_iekf.Q.cpu().detach().numpy()
 
