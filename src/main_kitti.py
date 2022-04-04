@@ -20,7 +20,7 @@ from utils_plot import results_filter
 
 
 def launch(args):
-    ## dataset_class == KITTIDataset
+    ## dataset_class == KITTIDataset == dataset
     if args.read_data:
         args.dataset_class.read_data(args)
     dataset = args.dataset_class(args)
@@ -446,6 +446,11 @@ def test_filter(args, dataset):
         u_t = torch.from_numpy(u).double()
         measurements_covs = torch_iekf.forward_nets(u_t)
         measurements_covs = measurements_covs.detach().numpy()
+        if False:  ## for original iekf
+            measurements_covs[:,0] = float(iekf.cov_lat)
+            measurements_covs[:,1] = float(iekf.cov_up)
+        print('size measurements_covs: {}'.format(np.shape(measurements_covs)))
+        # print(measurements_covs)
         start_time = time.time()
         Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i = iekf.run(t, u, measurements_covs,
                                                                    v_gt, p_gt, N,
@@ -476,17 +481,18 @@ class KITTIArgs():
 
     # choose what to do
     read_data         = 0  ## reads data and saves it in pickle form
-    train_filter      = 1  ## train model
+    train_filter      = 0  ## train model
     continue_training = 0  ## continues training
-    test_filter       = 0  ## perform test and save results in results folder
-    results_filter    = 0  ## reads results folder and plot
+    test_filter       = 1  ## perform test and save results in results folder
+    results_filter    = 1  ## reads results folder and plot
     dataset_class = KITTIDataset
     parameter_class = KITTIParameters
+
+    ## KHC
     device = "cuda" if torch.cuda.is_available() else "cpu"
+    model_name = "t1_"
 
 
 if __name__ == '__main__':
-    # args = KITTIArgs()
-    # dataset = KITTIDataset(args)
     launch(KITTIArgs)
 

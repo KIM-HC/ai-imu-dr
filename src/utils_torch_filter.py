@@ -45,15 +45,50 @@ class MesNet(torch.nn.Module):
             self.beta_measurement = 3*torch.ones(2).double()
             self.tanh = torch.nn.Tanh()
 
-            self.cov_net = torch.nn.Sequential(torch.nn.Conv1d(6, 32, 5),
+            # ## original model
+            # self.cov_net = torch.nn.Sequential(
+
+            #            torch.nn.Conv1d(6, 32, 5),
+            #            torch.nn.ReplicationPad1d(4),
+            #            torch.nn.ReLU(),
+            #            torch.nn.Dropout(p=0.5),
+
+            #            torch.nn.Conv1d(32, 32, 5, dilation=3),
+            #            torch.nn.ReplicationPad1d(4),
+            #            torch.nn.ReLU(),
+            #            torch.nn.Dropout(p=0.5),
+            #            ).double()
+
+            ## model to fit given learned model from github
+            ## dilation added to keep same length
+            self.cov_net = torch.nn.Sequential(
+
+                       torch.nn.Conv1d(6, 32, 5),
                        torch.nn.ReplicationPad1d(4),
                        torch.nn.ReLU(),
                        torch.nn.Dropout(p=0.5),
+
+                       torch.nn.Conv1d(32, 64, 5),
+                       torch.nn.ReplicationPad1d(4),
+                       torch.nn.ReLU(),
+                       torch.nn.Dropout(p=0.5),
+
+                       torch.nn.Conv1d(64, 128, 7, dilation=2),
+                       torch.nn.ReplicationPad1d(4),
+                       torch.nn.ReLU(),
+                       torch.nn.Dropout(p=0.5),
+
+                       torch.nn.Conv1d(128, 32, 5, dilation=2),
+                       torch.nn.ReplicationPad1d(4),
+                       torch.nn.ReLU(),
+                       torch.nn.Dropout(p=0.5),
+
                        torch.nn.Conv1d(32, 32, 5, dilation=3),
                        torch.nn.ReplicationPad1d(4),
                        torch.nn.ReLU(),
                        torch.nn.Dropout(p=0.5),
                        ).double()
+
             "CNN for measurement covariance"
             self.cov_lin = torch.nn.Sequential(torch.nn.Linear(32, 2),
                                               torch.nn.Tanh(),

@@ -67,8 +67,8 @@ def train_filter(args, dataset):
     prepare_loss_data(args, dataset)
     save_iekf(args, iekf)
     optimizer = set_optimizer(iekf)
+    ## TODO: try adding lr_scheduler
     start_time = time.time()
-
     for epoch in range(1, args.epochs + 1):
         train_loop(args, dataset, epoch, iekf, optimizer, args.seq_dim, writer)  ## TORCHIEKF
         save_iekf(args, iekf)

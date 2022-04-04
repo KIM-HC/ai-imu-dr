@@ -2,3 +2,6 @@ data/
 results/
 src/__pycache__
 runs/
+temp/delta_p.p
+temp/normalize_factors.p
+temp/iekfnets.p
