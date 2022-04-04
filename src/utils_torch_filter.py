@@ -526,8 +526,8 @@ def isclose(mat1, mat2, tol=1e-10):
 
 
 def prepare_filter(args, dataset):
-    torch_iekf = TORCHIEKF()
-    torch_iekf.load(args, dataset)
+    # torch_iekf = TORCHIEKF()
+    # torch_iekf.load(args, dataset)  # KHC: seems redundant
     torch_iekf = TORCHIEKF()
 
     # set dataset parameter
@@ -538,7 +538,7 @@ def prepare_filter(args, dataset):
 
     # load model
     torch_iekf.load(args, dataset)
-    torch_iekf.get_normalize_u(dataset)
+    # torch_iekf.get_normalize_u(dataset)  # KHC: seems redundant
 
     iekf = NUMPYIEKF(args.parameter_class)
     iekf.set_learned_covariance(torch_iekf)

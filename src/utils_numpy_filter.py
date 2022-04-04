@@ -141,7 +141,7 @@ class NUMPYIEKF:
 
     def init_run(self, dt, u, p_mes, v_mes, ang0, N):
         Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i = self.init_saved_state(dt, N, ang0)
-        Rot[0] = self.from_rpy(ang0[0], ang0[1], ang0[2])
+        Rot[0] = from_rpy(ang0[0], ang0[1], ang0[2])
         v[0] = v_mes[0]
         P = self.init_covariance()
         return Rot, v, p, b_omega, b_acc, Rot_c_i, t_c_i, P
@@ -186,10 +186,10 @@ class NUMPYIEKF:
                       b_acc_prev, u, dt):
         F = np.zeros((self.P_dim, self.P_dim))
         G = np.zeros((self.P_dim, self.Q_dim))
-        v_skew_rot = self.skew(v_prev).dot(Rot_prev)
-        p_skew_rot = self.skew(p_prev).dot(Rot_prev)
+        v_skew_rot = skew(v_prev).dot(Rot_prev)
+        p_skew_rot = skew(p_prev).dot(Rot_prev)
 
-        F[3:6, :3] = self.skew(self.g)
+        F[3:6, :3] = skew(self.g)
         F[6:9, 3:6] = self.Id3
         G[3:6, 3:6] = Rot_prev
         F[3:6, 12:15] = -Rot_prev
@@ -219,12 +219,12 @@ class NUMPYIEKF:
         # velocity in body frame
         v_body = Rot_c_i.T.dot(v_imu)
         # velocity in body frame in the vehicle axis
-        v_body += self.skew(t_c_i).dot(u[:3] - b_omega)
-        Omega = self.skew(u[:3] - b_omega)
+        v_body += skew(t_c_i).dot(u[:3] - b_omega)
+        Omega = skew(u[:3] - b_omega)
 
         # Jacobian w.r.t. car frame
-        H_v_imu = Rot_c_i.T.dot(self.skew(v_imu))
-        H_t_c_i = -self.skew(t_c_i)
+        H_v_imu = Rot_c_i.T.dot(skew(v_imu))
+        H_t_c_i = -skew(t_c_i)
 
         H = np.zeros((2, self.P_dim))
         H[:, 3:6] = Rot_body.T[1:]
@@ -263,21 +263,14 @@ class NUMPYIEKF:
         return Rot_up, v_up, p_up, b_omega_up, b_acc_up, Rot_c_i_up, t_c_i_up, P_up
 
     @staticmethod
-    def skew(x):
-        X = np.array([[0, -x[2], x[1]],
-                      [x[2], 0, -x[0]],
-                      [-x[1], x[0], 0]])
-        return X
-
-    @staticmethod
     def rot_from_2_vectors(v1, v2):
         v1 = v1/np.linalg.norm(v1)
         v2 = v2/np.linalg.norm(v2)
         v = np.cross(v1, v2)
         cosang = np.dot(v1, v2)
         sinang = np.linalg.norm(v)
-        Rot = NUMPYIEKF.Id3 + NUMPYIEKF.skew(v) + \
-              NUMPYIEKF.skew(v).dot(NUMPYIEKF.skew(v))*(1-cosang)/(sinang**2)
+        Rot = NUMPYIEKF.Id3 + skew(v) + \
+              skew(v).dot(skew(v))*(1-cosang)/(sinang**2)
         Rot = NUMPYIEKF.normalize_rot(Rot)
         return Rot
 
@@ -366,51 +359,6 @@ class NUMPYIEKF:
         S[2, 2] = np.linalg.det(U) * np.linalg.det(V)
         return U.dot(S).dot(V)
 
-    @staticmethod
-    def from_rpy(roll, pitch, yaw):
-        return NUMPYIEKF.rotz(yaw).dot(NUMPYIEKF.roty(pitch).dot(NUMPYIEKF.rotx(roll)))
-
-    @staticmethod
-    def rotx(t):
-        c = np.cos(t)
-        s = np.sin(t)
-        return np.array([[1,  0,  0],
-                         [0,  c, -s],
-                         [0,  s,  c]])
-
-    @staticmethod
-    def roty(t):
-        c = np.cos(t)
-        s = np.sin(t)
-        return np.array([[c,  0,  s],
-                         [0,  1,  0],
-                         [-s, 0,  c]])
-
-    @staticmethod
-    def rotz(t):
-        c = np.cos(t)
-        s = np.sin(t)
-        return np.array([[c, -s,  0],
-                         [s,  c,  0],
-                         [0,  0,  1]])
-
-    @staticmethod
-    def to_rpy(Rot):
-        pitch = np.arctan2(-Rot[2, 0], np.sqrt(Rot[0, 0]**2 + Rot[1, 0]**2))
-
-        if np.isclose(pitch, np.pi / 2.):
-            yaw = 0.
-            roll = np.arctan2(Rot[0, 1], Rot[1, 1])
-        elif np.isclose(pitch, -np.pi / 2.):
-            yaw = 0.
-            roll = -np.arctan2(Rot[0, 1], Rot[1, 1])
-        else:
-            sec_pitch = 1. / np.cos(pitch)
-            yaw = np.arctan2(Rot[1, 0] * sec_pitch,
-                             Rot[0, 0] * sec_pitch)
-            roll = np.arctan2(Rot[2, 1] * sec_pitch,
-                              Rot[2, 2] * sec_pitch)
-        return roll, pitch, yaw
 
     def set_learned_covariance(self, torch_iekf):
         torch_iekf.set_Q()

@@ -5,13 +5,14 @@ import numpy as np
 from utils import *
 import torch
 import pickle
+from main_kitti import KITTIArgs
 
-def results_filter():
+def results_filter(args):
     sets = ["git_model", "learned_1",
             "not_learned_1", "not_learned_2"]
-    path_sets = "../result_backup"
-    path_results = "../results"
-    path_data_save = "../data"
+    path_sets = args.path_sets
+    path_results = args.path_results
+    path_data_save = args.path_data_save
 
     datasets = []
     for data_name in os.listdir(path_data_save):
@@ -83,7 +84,9 @@ def results_filter():
         plt.show(block=True)
 
 if __name__ == '__main__':
-    results_filter()
+    is_kitti = True
+    if is_kitti:
+        results_filter(KITTIArgs)
     
 
 

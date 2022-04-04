@@ -17,7 +17,7 @@ from utils_numpy_filter import NUMPYIEKF as IEKF
 from utils import prepare_data
 from train_torch_filter import train_filter
 from utils_plot import results_filter
-
+from utils import to_rpy
 
 def launch(args):
     ## dataset_class == KITTIDataset == dataset
@@ -228,7 +228,7 @@ class KITTIDataset(BaseDataset):
                     v_rob_gt[k, 2] = oxts_k[0].vu
                     p_gt[k] = oxts_k[1][:3, 3]
                     Rot_gt_k = oxts_k[1][:3, :3]
-                    roll_gt[k], pitch_gt[k], yaw_gt[k] = IEKF.to_rpy(Rot_gt_k)
+                    roll_gt[k], pitch_gt[k], yaw_gt[k] = to_rpy(Rot_gt_k)
 
                 t0 = t[0]
                 t = np.array(t) - t[0]
@@ -468,9 +468,10 @@ def test_filter(args, dataset):
 
 class KITTIArgs():
     path_data_base = "/home/khc/dataset/kitti"  ## where raw dataset is saved
-    path_data_save = "../data"
-    path_results = "../results"
-    path_temp = "../temp"
+    path_data_save = "../kitti_dataset/data"
+    path_results = "../kitti_dataset/results"
+    path_temp = "../kitti_dataset/temp"
+    path_sets = "../kitti_dataset/result_backup"
 
     epochs = 400
     seq_dim = 6000
@@ -482,7 +483,7 @@ class KITTIArgs():
     # choose what to do
     read_data         = 0  ## reads data and saves it in pickle form
     train_filter      = 0  ## train model
-    continue_training = 0  ## continues training
+    continue_training = 1  ## continues training
     test_filter       = 1  ## perform test and save results in results folder
     results_filter    = 1  ## reads results folder and plot
     dataset_class = KITTIDataset
