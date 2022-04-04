@@ -2,7 +2,7 @@
 
 _1.10%_ translational error on the [KITTI](http://www.cvlibs.net/datasets/kitti/eval_odometry.php) odometry sequences with __only__ an Inertial Measurement Unit.
 
-![Results on sequence 08](temp/file/08.gif)
+![Results on sequence 08](kitti_dataset/temp/file/08.gif)
 
 ## Overview
 
